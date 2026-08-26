@@ -15,9 +15,9 @@ output "ssm_command_private" {
 }
 
 output "server_ip_private2" {
-  value = module.my_server_private.public_ip
+  value = module.my_server_private2.public_ip
 }
 
 output "ssm_command_private2" {
-  value = "aws ssm start-session --target ${module.my_server_private.id}"
+  value = "aws ssm start-session --target ${module.my_server_private2.id}"
 }

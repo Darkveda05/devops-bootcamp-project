@@ -29,7 +29,7 @@ module "my_server_public" {
   vpc_security_group_ids = [module.my_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  user_data = templatefile("userdata.sh", {})
+  user_data = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
   tags      = { Name = "devops-server-public" }
 }
 
@@ -45,8 +45,7 @@ module "my_server_private" {
   vpc_security_group_ids = [module.private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
-  tags      = { Name = "devops-server-private" }
+  tags = { Name = "devops-server-private" }
 }
 
 module "my_server_private2" {
@@ -61,6 +60,6 @@ module "my_server_private2" {
   vpc_security_group_ids = [module.private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
 
-  user_data = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
+  user_data = templatefile("userdata.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
   tags      = { Name = "devops-server-private2" }
 }

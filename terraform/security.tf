@@ -62,7 +62,7 @@ module "private_sg" {
 
   ingress_rules = {
     ssh = {
-      cidr_ipv4   = "10.0.0.0 /25"
+      cidr_ipv4   = "10.0.0.0/25"
       ip_protocol = "tcp"
       from_port   = 22
       to_port     = 22
