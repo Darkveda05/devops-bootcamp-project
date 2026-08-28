@@ -43,6 +43,7 @@ module "node1" {
   create_security_group  = false
   vpc_security_group_ids = [module.devops-private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
+  user_data              = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
   tags                   = { Name = "node1" }
   root_block_device      = { size = 16 }
 }
@@ -57,7 +58,6 @@ module "node2" {
   create_security_group  = false
   vpc_security_group_ids = [module.devops-private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
-  user_data              = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
   tags                   = { Name = "node2" }
   root_block_device      = { size = 16 }
 }
