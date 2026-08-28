@@ -1,34 +1,54 @@
-- name: Sediakan web server
-  hosts: nodes
+- name: Sediakan web server (Docker)
+  hosts: node3
   become: true
   vars:
+    docker_users: [ubuntu]
     site_title: Armada Infratify
     site_owner: Pasukan Platform
     web_port: 80
+  roles:
+    - geerlingguy.docker
   tasks:
-    - name: Pasang nginx
-      apt:
-        name: nginx
-        state: present
-        update_cache: yes
-    - name: Hidupkan servis nginx
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-    - name: Tulis index.html
+    - name: Cipta folder web
+      file:
+        path: /opt/web
+        state: directory
+
+    - name: Cipta folder html
+      file:
+        path: /opt/web/html
+        state: directory
+
+    - name: Hantar index.html
       template:
-       src: index.html.j2
-       dest: /var/www/html/index.html
-    # < bersambung
-    - name: Tulis config nginx
+        src: index.html.j2
+        dest: /opt/web/html/index.html
+
+    - name: Hantar config nginx
       template:
         src: nginx-site.conf.j2
-        dest: /etc/nginx/sites-available/default
-      notify: Restart nginx
+        dest: /opt/web/default.conf
 
-  handlers:
-    - name: Restart nginx
+    - name: Hantar compose-web.yaml
+      copy:
+        src: compose-web.yaml
+        dest: /opt/web/compose-web.yaml
+
+    - name: Matikan nginx sistem lama (bebaskan port 80)
       service:
         name: nginx
-        state: restarted
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Naikkan container web
+      command: docker compose -f compose-web.yaml up -d --force-recreate
+      args:
+        chdir: /opt/web
+      register: web_up
+
+    - name: Tunjuk hasil naikkan container
+      command: docker compose -f compose-web.yaml ps
+      args:
+        chdir: /opt/web
+      when: web_up is changed
