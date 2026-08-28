@@ -18,6 +18,12 @@ module "devops-public_sg" {
       from_port   = 80
       to_port     = 80
     }
+    ssh = {
+      cidr_ipv4   = "10.0.0.0/24"
+      ip_protocol = "tcp"
+      from_port   = 22
+      to_port     = 22
+    }
   }
 
   egress_rules = {
@@ -38,7 +44,7 @@ module "devops-private_sg" {
 
   ingress_rules = {
     ssh = {
-      cidr_ipv4   = "${chomp(data.http.myip.response_body)}/32"
+      cidr_ipv4   = "10.0.0.0/24"
       ip_protocol = "tcp"
       from_port   = 22
       to_port     = 22
@@ -51,7 +57,7 @@ module "devops-private_sg" {
       to_port     = 9090
     }
     node_exporter = {
-      cidr_ipv4   = "10.0.0.128/25"
+      cidr_ipv4   = "10.0.0.0/24"
       ip_protocol = "tcp"
       from_port   = 9100
       to_port     = 9100
