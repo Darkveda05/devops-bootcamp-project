@@ -30,6 +30,7 @@ module "node3" {
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
   user_data              = templatefile("userdata.sh", {})
   tags                   = { Name = "node3" }
+  key_name               = "yusof2-key"
   root_block_device      = { size = 16 }
 }
 
@@ -43,6 +44,8 @@ module "node1" {
   create_security_group  = false
   vpc_security_group_ids = [module.devops-private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
+  key_name               = "yusof2-key"
+  user_data              = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
   tags                   = { Name = "node1" }
   root_block_device      = { size = 16 }
 }
@@ -57,7 +60,7 @@ module "node2" {
   create_security_group  = false
   vpc_security_group_ids = [module.devops-private_sg.id]
   iam_instance_profile   = data.aws_iam_instance_profile.my_ssm_profile.name
-  user_data              = templatefile("userdata-tunnel.sh", { tunnel_token = data.aws_ssm_parameter.token.value })
+  key_name               = "yusof2-key"
   tags                   = { Name = "node2" }
   root_block_device      = { size = 16 }
 }
