@@ -1,4 +1,6 @@
 server {
     listen {{ web_port }};
-    root /var/www/html;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
 }
