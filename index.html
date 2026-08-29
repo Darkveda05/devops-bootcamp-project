@@ -80,119 +80,216 @@
   </header>
 
   <main>
+<!-- SYNC:START -->
     <section class="card">
       <h2>Overview</h2>
-      <p>Final project for the DevOps bootcamp. It sets up cloud infrastructure using <strong>Infrastructure as Code (IaC)</strong>:</p>
-      <ul>
-        <li><strong>Terraform</strong> — creates the AWS infrastructure</li>
-        <li><strong>Ansible</strong> — configures the servers</li>
-        <li><strong>Docker</strong> — runs the monitoring stack (Prometheus + Grafana) and the web server</li>
-      </ul>
+<p>Final project for the DevOps bootcamp. It sets up cloud infrastructure using <strong>Infrastructure as Code (IaC)</strong>:</p>
+<ul>
+<li><strong>Terraform</strong> — creates the AWS infrastructure</li>
+<li><strong>Ansible</strong> — configures the servers</li>
+<li><strong>Docker</strong> — runs the monitoring stack (Prometheus + Grafana) and the web server</li>
+</ul>
     </section>
 
     <section class="card">
       <h2>Architecture</h2>
-      <ul>
-        <li><strong>AWS region</strong>: <code>ap-southeast-1</code></li>
-        <li><strong>VPC</strong>: <code>10.0.0.0/24</code> with a public subnet (<code>10.0.0.0/25</code>) and a private subnet (<code>10.0.0.128/25</code>), plus one NAT gateway</li>
-        <li><strong>3 EC2 nodes</strong> (t3.small, Ubuntu 24.04, 16GB disk):
-          <ul>
-            <li><strong>node1</strong> — private subnet (Prometheus + Grafana via Docker, Cloudflare Tunnel)</li>
-            <li><strong>node2</strong> — private subnet (node_exporter)</li>
-            <li><strong>node3</strong> — public subnet (nginx web server in Docker)</li>
-          </ul>
-        </li>
-        <li><strong>Access</strong>: SSM (<code>EC2-SSM-Role</code>) and SSH (key <code>yusof2-key</code>)</li>
-      </ul>
+<ul>
+<li><strong>AWS region</strong>: <code>ap-southeast-1</code></li>
+<li><strong>VPC</strong>: <code>10.0.0.0/24</code> with a public subnet (<code>10.0.0.0/25</code>) and a private subnet (<code>10.0.0.128/25</code>), plus one NAT gateway</li>
+<li><strong>3 EC2 nodes</strong> (t3.small, Ubuntu 24.04, 16GB disk):<ul>
+<li><strong>node1</strong> — private subnet (runs Prometheus + Grafana via Docker, Cloudflare Tunnel for access)</li>
+<li><strong>node2</strong> — private subnet (runs node_exporter)</li>
+<li><strong>node3</strong> — public subnet (runs nginx web server in Docker)</li>
+</ul>
+</li>
+<li><strong>Access</strong>: SSM (<code>EC2-SSM-Role</code>) and SSH (key <code>yusof2-key</code>)</li>
+</ul>
     </section>
 
     <section class="card">
       <h2>Project Structure</h2>
-      <pre><code>.
-├── .github/workflows/  # GitHub Actions CI/CD pipeline
+<pre><code>.
+├── .github/workflows/  # GitHub Actions CI/CD pipeline (commit-pipeline.yml, static.yml)
 ├── terraform/          # AWS infrastructure (VPC, EC2, security groups, inventory)
 ├── ansible/            # Server setup (playbooks, templates, docker compose)
-├── app/                # Web app (front-end "ship")
-└── opencode.json       # opencode config (terraform MCP)</code></pre>
+├── app/                # Web app (front-end &quot;ship&quot;)
+├── scripts/            # Docs sync engine (sync-docs.mjs)
+├── package.json        # Root tooling for the docs sync
+└── opencode.json       # opencode config (terraform MCP)
+</code></pre>
     </section>
 
     <section class="card">
       <h2>Terraform — Create the Infrastructure</h2>
-      <table>
-        <tr><th>File</th><th>Purpose</th></tr>
-        <tr><td><code>providers.tf</code></td><td>AWS provider, S3 backend</td></tr>
-        <tr><td><code>network.tf</code></td><td>VPC, public/private subnets, NAT gateway</td></tr>
-        <tr><td><code>security.tf</code></td><td>Security groups (HTTP 80, SSH 22, exporters, Prometheus, Grafana)</td></tr>
-        <tr><td><code>ec2.tf</code></td><td>3 EC2 instances (ubuntu AMI, SSM role, user_data)</td></tr>
-        <tr><td><code>inventory.tf</code></td><td>Generates <code>inventory.ini</code> for Ansible</td></tr>
-        <tr><td><code>userdata.sh</code></td><td>Installs Docker + adds user to docker group</td></tr>
-        <tr><td><code>userdata-tunnel.sh</code></td><td>Installs Docker + runs Cloudflare Tunnel (node1)</td></tr>
-      </table>
-      <h3>How to run</h3>
-      <pre><code>cd terraform
+<p>Main files in <code>terraform/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>providers.tf</code></td>
+<td>AWS provider, S3 backend (<code>devops-bootcamp-terraform-yusof</code>)</td>
+</tr>
+<tr>
+<td><code>network.tf</code></td>
+<td>VPC, public/private subnets, NAT gateway</td>
+</tr>
+<tr>
+<td><code>security.tf</code></td>
+<td>Security groups (HTTP 80, SSH 22, node_exporter 9100, Prometheus 9090, Grafana 3000)</td>
+</tr>
+<tr>
+<td><code>ec2.tf</code></td>
+<td>3 EC2 instances (ubuntu AMI, SSM role, user_data)</td>
+</tr>
+<tr>
+<td><code>inventory.tf</code></td>
+<td>Generates <code>inventory.ini</code> for Ansible</td>
+</tr>
+<tr>
+<td><code>userdata.sh</code></td>
+<td>Installs Docker + adds user to docker group</td>
+</tr>
+<tr>
+<td><code>userdata-tunnel.sh</code></td>
+<td>Installs Docker + runs Cloudflare Tunnel (node1)</td>
+</tr>
+</tbody></table>
+<p>How to run:</p>
+<pre><code class="language-bash">cd terraform
 terraform init
-terraform apply -auto-approve</code></pre>
+terraform apply -auto-approve
+</code></pre>
+<p>node1 is in the private subnet. It is accessed through a <strong>Cloudflare Tunnel</strong> using a token from the SSM parameter <code>/devops-bootcamp-2026/tunnel-token</code>.</p>
     </section>
 
     <section class="card">
       <h2>Ansible — Configure the Servers</h2>
-      <table>
-        <tr><th>Playbook</th><th>Host</th><th>Purpose</th></tr>
-        <tr><td><code>playbook-web.yaml</code></td><td>node3</td><td>Runs nginx in Docker</td></tr>
-        <tr><td><code>playbook-stack.yaml</code></td><td>node1</td><td>Runs Prometheus + Grafana via Docker Compose</td></tr>
-        <tr><td><code>playbook-prometheus.yaml</code></td><td>node1</td><td>Installs Prometheus</td></tr>
-        <tr><td><code>playbook-exporter.yaml</code></td><td>nodes</td><td>Installs node_exporter</td></tr>
-      </table>
-      <h3>How to run</h3>
-      <pre><code>cd ansible
+<p>Inventory: <code>terraform/inventory.ini</code> (generated by Terraform). Settings are in <code>ansible/ansible.cfg</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Playbook</th>
+<th>Host</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>playbook-web.yaml</code></td>
+<td>node3</td>
+<td>Runs nginx in <strong>Docker</strong> (files to <code>/opt/web</code>, <code>docker compose up</code>)</td>
+</tr>
+<tr>
+<td><code>playbook-stack.yaml</code></td>
+<td>node1</td>
+<td>Runs Prometheus + Grafana via Docker Compose</td>
+</tr>
+<tr>
+<td><code>playbook-prometheus.yaml</code></td>
+<td>node1</td>
+<td>Installs Prometheus</td>
+</tr>
+<tr>
+<td><code>playbook-exporter.yaml</code></td>
+<td>nodes</td>
+<td>Installs node_exporter</td>
+</tr>
+</tbody></table>
+<p>How to run:</p>
+<pre><code class="language-bash">cd ansible
 ansible-playbook playbook-web.yaml
 ansible-playbook playbook-stack.yaml
-ansible-playbook playbook-exporter.yaml</code></pre>
+ansible-playbook playbook-exporter.yaml
+</code></pre>
+<h3>Web server (node3)</h3>
+<p>It first used <code>apt</code> to install nginx as a system service, then was changed to run nginx in <strong>Docker</strong>:</p>
+<ul>
+<li><code>compose-web.yaml</code> — uses the <code>nginx:stable</code> image, maps port 80, mounts <code>html/</code> and <code>default.conf</code></li>
+<li><code>index.html.j2</code> — the web page (title, owner, server name, IP, memory)</li>
+<li><code>nginx-site.conf.j2</code> — nginx config</li>
+<li>Before the container starts, the old system nginx is stopped so it does not use port 80</li>
+</ul>
+<h3>Monitoring stack (node1)</h3>
+<ul>
+<li><code>compose.yaml</code> — Prometheus + Grafana via Docker Compose to <code>/opt/monitoring</code></li>
+<li><code>prometheus.yaml</code> — scrape config for Prometheus and node_exporter</li>
+</ul>
     </section>
 
     <section class="card">
       <h2>Application (app/)</h2>
-      <p>The <em>ship</em> web app is a front-end built with Vite. The <code>index.html</code> content is generated from <code>index.html.j2</code> during web deployment.</p>
+<p>The &quot;ship&quot; web app is a front-end built with Vite. The <code>index.html</code> content is generated from <code>index.html.j2</code> during web deployment.</p>
     </section>
 
     <section class="card">
       <h2>Prerequisites</h2>
-      <ul>
-        <li>Terraform 1.15+</li>
-        <li>Ansible + galaxy roles: <code>geerlingguy.docker</code>, <code>prometheus.prometheus.prometheus</code>, <code>prometheus.prometheus.node_exporter</code></li>
-        <li>AWS CLI and AWS credentials</li>
-        <li>SSH key <code>~/.ssh/id_ed25519</code></li>
-      </ul>
+<ul>
+<li>Terraform 1.15+</li>
+<li>Ansible + galaxy roles:<ul>
+<li><code>geerlingguy.docker</code></li>
+<li><code>prometheus.prometheus.prometheus</code></li>
+<li><code>prometheus.prometheus.node_exporter</code></li>
+</ul>
+</li>
+<li>AWS CLI and AWS credentials</li>
+<li>SSH key <code>~/.ssh/id_ed25519</code></li>
+</ul>
     </section>
 
     <section class="card">
       <h2>Deploy Flow</h2>
-      <ol>
-        <li><strong>Terraform</strong>: <code>terraform apply</code> — creates the VPC, security groups, 3 EC2 instances, and generates <code>inventory.ini</code></li>
-        <li><strong>Ansible</strong>: run the playbooks you need (web or monitoring)</li>
-        <li><strong>Access</strong>: node3 via public IP; node1/node2 via SSM</li>
-      </ol>
+<ol>
+<li><strong>Terraform</strong>: <code>terraform apply</code> — creates the VPC, security groups, 3 EC2 instances, and generates <code>inventory.ini</code></li>
+<li><strong>Ansible</strong>: run the playbooks you need (web or monitoring)</li>
+<li><strong>Access</strong>: node3 via public IP; node1/node2 via SSM</li>
+</ol>
     </section>
 
     <section class="card">
       <h2>CI/CD (GitHub Actions)</h2>
-      <p>A minimal commit pipeline in <code>.github/workflows/commit-pipeline.yml</code> runs on every push to <code>main</code>:</p>
-      <table>
-        <tr><th>Step</th><th>Command</th></tr>
-        <tr><td>Install dependencies</td><td><code>npm ci</code></td></tr>
-        <tr><td>Preflight test</td><td><code>npm test</code></td></tr>
-        <tr><td>Unit tests</td><td><code>npm run test:unit</code></td></tr>
-        <tr><td>Build</td><td><code>npm run build</code></td></tr>
-      </table>
+<p>Two workflows live in <code>.github/workflows/</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Workflow</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>commit-pipeline.yml</code></td>
+<td>Syncs <code>README.MD</code> and <code>index.html</code></td>
+</tr>
+<tr>
+<td><code>static.yml</code></td>
+<td>Deploys the repo to GitHub Pages (which serves <code>index.html</code>)</td>
+</tr>
+</tbody></table>
+<h3>Docs sync — <code>README.MD</code> ⇄ <code>index.html</code></h3>
+<p>The pipeline <strong>monitors changes to the docs and keeps both files in sync</strong>:</p>
+<ul>
+<li>When <code>README.MD</code> changes → <code>index.html</code> is regenerated from it (cards are derived from each <code>##</code> section).</li>
+<li>When <code>index.html</code> changes → <code>README.MD</code> is regenerated from the card content.</li>
+<li>If both change → <code>README.MD</code> wins and <code>index.html</code> is regenerated from it.</li>
+</ul>
+<p>The content window of <code>index.html</code> lives between <code>&lt;!-- SYNC:START --&gt;</code> and <code>&lt;!-- SYNC:END --&gt;</code> (the hero, styles, and footer stay untouched). Once synced, the generated file is <strong>auto-committed back to <code>main</code></strong> by the <code>github-actions[bot]</code>, and the push triggers a Pages redeploy via <code>static.yml</code>, so the site always reflects the README.</p>
+<p>Run the sync locally at any time:</p>
+<pre><code class="language-bash">npm install        # first time only
+npm run sync:docs  # dry-run (shows what would change)
+npm run sync:docs -- --write  # persist changes
+</code></pre>
     </section>
 
     <section class="card">
       <h2>Notes</h2>
-      <ul>
-        <li><code>terraform/.terraform</code>, state files, and environment variables are excluded in <code>.gitignore</code></li>
-        <li>The private security group only allows Prometheus/Grafana access from your current public IP</li>
-      </ul>
+<ul>
+<li><code>terraform/.terraform</code>, state files, and environment variables are excluded in <code>.gitignore</code></li>
+<li>The private security group only allows Prometheus/Grafana access from your current public IP (detected via <code>ifconfig.me</code>)</li>
+</ul>
     </section>
+<!-- SYNC:END -->
 
     <p class="muted" style="text-align:center;margin-top:2rem;">
       View the repository on <a href="https://github.com/Darkveda05/devops-bootcamp-project">GitHub</a>

@@ -20,10 +20,12 @@ Final project for the DevOps bootcamp. It sets up cloud infrastructure using **I
 
 ```
 .
-├── .github/workflows/  # GitHub Actions CI/CD pipeline
+├── .github/workflows/  # GitHub Actions CI/CD pipeline (commit-pipeline.yml, static.yml)
 ├── terraform/          # AWS infrastructure (VPC, EC2, security groups, inventory)
 ├── ansible/            # Server setup (playbooks, templates, docker compose)
 ├── app/                # Web app (front-end "ship")
+├── scripts/            # Docs sync engine (sync-docs.mjs)
+├── package.json        # Root tooling for the docs sync
 └── opencode.json       # opencode config (terraform MCP)
 ```
 
@@ -107,16 +109,30 @@ The "ship" web app is a front-end built with Vite. The `index.html` content is g
 
 ## CI/CD (GitHub Actions)
 
-A minimal commit pipeline lives in `.github/workflows/commit-pipeline.yml`. It runs automatically on every **push/commit to `main`** (and can be triggered manually via **Actions → Run workflow**).
+Two workflows live in `.github/workflows/`:
 
-| Step | Command |
-|------|---------|
-| Install dependencies | `npm ci` |
-| Preflight test | `npm test` |
-| Unit tests | `npm run test:unit` |
-| Build | `npm run build` |
+| Workflow | Purpose |
+|----------|---------|
+| `commit-pipeline.yml` | Syncs `README.MD` and `index.html` |
+| `static.yml` | Deploys the repo to GitHub Pages (which serves `index.html`) |
 
-All steps run against the `ship` app (`app/ship`). No cloud credentials or secrets are required — it simply validates and builds the application code on each commit, so a broken commit fails the pipeline.
+### Docs sync — `README.MD` ⇄ `index.html`
+
+The pipeline **monitors changes to the docs and keeps both files in sync**:
+
+- When `README.MD` changes → `index.html` is regenerated from it (cards are derived from each `##` section).
+- When `index.html` changes → `README.MD` is regenerated from the card content.
+- If both change → `README.MD` wins and `index.html` is regenerated from it.
+
+The content window of `index.html` lives between `<!-- SYNC:START -->` and `<!-- SYNC:END -->` (the hero, styles, and footer stay untouched). Once synced, the generated file is **auto-committed back to `main`** by the `github-actions[bot]`, and the push triggers a Pages redeploy via `static.yml`, so the site always reflects the README.
+
+Run the sync locally at any time:
+
+```bash
+npm install        # first time only
+npm run sync:docs  # dry-run (shows what would change)
+npm run sync:docs -- --write  # persist changes
+```
 
 ## Notes
 
