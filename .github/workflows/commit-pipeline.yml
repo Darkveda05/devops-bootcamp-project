@@ -48,7 +48,7 @@ jobs:
             if [ "$PREV" = "" ] || [ "$PREV" = "0000000000000000000000000000000000000000" ] || [ "$PREV" = "HEAD~1" ]; then
               CHANGED="README.MD README.md index.html"
             else
-              CHANGED="$(git diff --name-only "$PREV"..HEAD -- README.MD README.md index.html || true)"
+              CHANGED="$(git diff --name-only "$PREV"..HEAD -- README.* index.html || true)"
             fi
           else
             CHANGED="README.MD README.md index.html"
@@ -61,10 +61,10 @@ jobs:
 
       - name: Commit synced docs
         run: |
-          if ! git diff --exit-code --quiet -- README.MD README.md index.html; then
+          if ! git diff --exit-code --quiet -- README.* index.html; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add README.MD README.md index.html
+            git add README.* index.html
             git commit -m "docs: sync README and index.html"
             git push
             echo "Committed and pushed synced docs."
