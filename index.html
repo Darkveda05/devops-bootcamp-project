@@ -288,6 +288,7 @@ npm run sync:docs -- --write  # persist changes
 <li><code>terraform/.terraform</code>, state files, and environment variables are excluded in <code>.gitignore</code></li>
 <li>The private security group only allows Prometheus/Grafana access from your current public IP (detected via <code>ifconfig.me</code>)</li>
 <li>The GitHub Pages site (<code>index.html</code>) is kept in sync with this README automatically by <code>commit-pipeline.yml</code></li>
+<li>After auto-committing synced docs, the pipeline dispatches a Pages redeploy so the site updates immediately</li>
 </ul>
     </section>
 <!-- SYNC:END -->
