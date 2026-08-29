@@ -1,54 +1,75 @@
-- name: Sediakan web server (Docker)
+- name: Tarik imej dari ECR dan jalankan container web di node3
   hosts: node3
   become: true
   vars:
-    docker_users: [ubuntu]
-    site_title: Armada Infratify
-    site_owner: Pasukan Platform
+    aws_region: ap-southeast-1
+    ecr_registry: 569215999117.dkr.ecr.ap-southeast-1.amazonaws.com
+    image_repo: devops-bootcamp/final-project-yusof
+    image_tag: latest
     web_port: 80
-  roles:
-    - geerlingguy.docker
   tasks:
-    - name: Cipta folder web
-      file:
-        path: /opt/web
-        state: directory
-
-    - name: Cipta folder html
-      file:
-        path: /opt/web/html
-        state: directory
-
-    - name: Hantar index.html
-      template:
-        src: index.html.j2
-        dest: /opt/web/html/index.html
-
-    - name: Hantar config nginx
-      template:
-        src: nginx-site.conf.j2
-        dest: /opt/web/default.conf
-
-    - name: Hantar compose-web.yaml
-      copy:
-        src: compose-web.yaml
-        dest: /opt/web/compose-web.yaml
-
-    - name: Matikan nginx sistem lama (bebaskan port 80)
+    - name: Pastikan docker dipasang dan berjalan
       service:
-        name: nginx
-        state: stopped
-        enabled: no
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pasang aws cli jika tiada
+      become: true
+      shell: |
+        if ! command -v aws >/dev/null 2>&1; then
+          apt-get update -y && apt-get install -y unzip curl
+          curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscliv2.zip
+          unzip -q -o /tmp/awscliv2.zip -d /tmp/aws-cli
+          /tmp/aws-cli/aws/install
+        fi
+      changed_when: false
+
+    - name: Daftar login ke ECR
+      shell: |
+        aws ecr get-login-password --region {{ aws_region }} \
+          | docker login --username AWS --password-stdin {{ ecr_registry }}
+      register: ecr_login
+      until: ecr_login.rc == 0
+      retries: 6
+      delay: 10
+      changed_when: false
+
+    - name: Tarik imej dari ECR
+      docker_image:
+        name: "{{ ecr_registry }}/{{ image_repo }}:{{ image_tag }}"
+        source: pull
+
+    - name: Buang semua container lama yang duduk di port {{ web_port }}
+      shell: |
+        for c in $(docker ps -aq); do
+          ports=$(docker port "$c" 2>/dev/null | grep -q "/tcp" && docker port "$c")
+          if echo "$ports" | grep -q "0.0.0.0:{{ web_port }}"; then
+            docker rm -f "$c"
+          fi
+        done
+      changed_when: false
+
+    - name: Buang container web jika wujud
+      docker_container:
+        name: web
+        state: absent
       ignore_errors: yes
 
-    - name: Naikkan container web
-      command: docker compose -f compose-web.yaml up -d --force-recreate
-      args:
-        chdir: /opt/web
-      register: web_up
+    - name: Jalankan container web pada port {{ web_port }}
+      docker_container:
+        name: web
+        image: "{{ ecr_registry }}/{{ image_repo }}:{{ image_tag }}"
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "{{ web_port }}:80"
 
-    - name: Tunjuk hasil naikkan container
-      command: docker compose -f compose-web.yaml ps
-      args:
-        chdir: /opt/web
-      when: web_up is changed
+    - name: Tunjuk status container web
+      command: docker ps --filter name=web --format "table {{ '{{.Names}}' }}\t{{ '{{.Status}}' }}\t{{ '{{.Ports}}' }}"
+      register: web_status
+      changed_when: false
+
+    - name: Papar status
+      debug:
+        var: web_status.stdout
