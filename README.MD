@@ -138,3 +138,4 @@ npm run sync:docs -- --write  # persist changes
 
 - `terraform/.terraform`, state files, and environment variables are excluded in `.gitignore`
 - The private security group only allows Prometheus/Grafana access from your current public IP (detected via `ifconfig.me`)
+- Docs sync CI live-test (2026-08-29)
