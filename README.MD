@@ -20,6 +20,7 @@ Final project for the DevOps bootcamp. It sets up cloud infrastructure using **I
 
 ```
 .
+├── .github/workflows/  # GitHub Actions CI/CD pipeline
 ├── terraform/          # AWS infrastructure (VPC, EC2, security groups, inventory)
 ├── ansible/            # Server setup (playbooks, templates, docker compose)
 ├── app/                # Web app (front-end "ship")
@@ -103,6 +104,19 @@ The "ship" web app is a front-end built with Vite. The `index.html` content is g
 1. **Terraform**: `terraform apply` — creates the VPC, security groups, 3 EC2 instances, and generates `inventory.ini`
 2. **Ansible**: run the playbooks you need (web or monitoring)
 3. **Access**: node3 via public IP; node1/node2 via SSM
+
+## CI/CD (GitHub Actions)
+
+A minimal commit pipeline lives in `.github/workflows/commit-pipeline.yml`. It runs automatically on every **push/commit to `main`** (and can be triggered manually via **Actions → Run workflow**).
+
+| Step | Command |
+|------|---------|
+| Install dependencies | `npm ci` |
+| Preflight test | `npm test` |
+| Unit tests | `npm run test:unit` |
+| Build | `npm run build` |
+
+All steps run against the `ship` app (`app/ship`). No cloud credentials or secrets are required — it simply validates and builds the application code on each commit, so a broken commit fails the pipeline.
 
 ## Notes
 
