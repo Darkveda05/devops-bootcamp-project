@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: docs-sync-${{ github.ref }}
@@ -67,7 +68,8 @@ jobs:
             git add README.* index.html
             git commit -m "docs: sync README and index.html"
             git push
-            echo "Committed and pushed synced docs."
+            gh workflow run "Deploy static content to Pages" --ref "$GITHUB_REF_NAME"
+            echo "Committed, pushed and redeploying Pages."
           else
             echo "Docs already in sync — nothing to commit."
           fi
