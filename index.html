@@ -209,6 +209,10 @@
 <td><code>index.html</code></td>
 <td>GitHub Pages entry point, regenerated from this README</td>
 </tr>
+<tr>
+<td><code>opencode.json</code></td>
+<td>opencode config (terraform MCP)</td>
+</tr>
 </tbody></table>
     </section>
 
@@ -245,7 +249,7 @@ cd ..
 <li><strong>VPC</strong>: <code>10.0.0.0/24</code> with a public subnet (<code>10.0.0.0/25</code>) and a private subnet (<code>10.0.0.128/25</code>), plus one NAT gateway</li>
 <li><strong>3 EC2 nodes</strong> (t3.small, Ubuntu 24.04, 16GB disk):<ul>
 <li><strong>node1</strong> — private subnet (runs Prometheus + Grafana via Docker, Cloudflare Tunnel for access)</li>
-<li><strong>node2</strong> — private subnet (controller to run Terraform & Ansible Playbook)</li>
+<li><strong>node2</strong> — private subnet (runs node_exporter)</li>
 <li><strong>node3</strong> — public subnet (runs the web app container in Docker)</li>
 </ul>
 </li>
@@ -343,7 +347,7 @@ terraform apply -auto-approve
 <h3>Web server (node3)</h3>
 <p><code>playbook-web.yaml</code> is the current deployment path: it installs the AWS CLI if needed, logs in to <strong>Amazon ECR</strong> and pulls
 <code>569215999117.dkr.ecr.ap-southeast-1.amazonaws.com/devops-bootcamp/final-project-yusof:latest</code>, then runs it as the <code>web</code>
-container on port 80 with</p>
+container on port 80 with <code>restart: unless-stopped</code>. Any earlier container already bound to port 80 is removed first.</p>
 <p><code>ansible/compose-web.yaml</code> is a lighter, static-nginx alternative (mounts <code>html/</code> and <code>default.conf</code>) that maps port 80.</p>
 <h3>Monitoring stack (node1)</h3>
 <ul>
@@ -418,7 +422,7 @@ npm run preview    # serve the built site on :8080
 <td>Initial Terraform configuration (VPC, network, EC2, inventory)</td>
 </tr>
 <tr>
-<td><code>ec2</code></td>
+<td><code>ec2</code> / <code>ec2new</code></td>
 <td>EC2 instance provisioning and key/AMI tweaks</td>
 </tr>
 <tr>
@@ -427,7 +431,7 @@ npm run preview    # serve the built site on :8080
 </tr>
 <tr>
 <td><code>docker</code></td>
-<td>Docker Compose + app containerisation (also folder <code>app/ship</code> into the repo)</td>
+<td>Docker Compose + app containerisation (also folded <code>app/ship</code> into the repo)</td>
 </tr>
 <tr>
 <td><code>grafana</code></td>
@@ -466,7 +470,7 @@ npm run preview    # serve the built site on :8080
 <li>When <code>index.html</code> changes → <code>README.MD</code> is regenerated from the card content.</li>
 <li>If both change → <code>README.MD</code> wins and <code>index.html</code> is regenerated from it.</li>
 </ul>
-<p>The content window of <code>index.html</code> lives between <code>&lt;!-- SYNC:START --&gt;</code> and <code>&lt;!-- SYNC:END --&gt;</code>. Once synced, the generated file is <strong>auto-committed back to <code>main</code></strong> by the <code>github-actions[bot]</code>, and the push triggers a Pages redeploy via <code>static.yml</code>, so the site always reflects the README.</p>
+<p>The content window of <code>index.html</code> lives between <code>&lt;!-- SYNC:START --&gt;</code> and <code>&lt;!-- SYNC:END --&gt;</code> (the hero, styles, and footer stay untouched). Once synced, the generated file is <strong>auto-committed back to <code>main</code></strong> by the <code>github-actions[bot]</code>, and the push triggers a Pages redeploy via <code>static.yml</code>, so the site always reflects the README.</p>
 <p>Run the sync locally at any time:</p>
 <pre><code class="language-bash">npm install        # first time only
 npm run sync:docs  # dry-run (shows what would change)
