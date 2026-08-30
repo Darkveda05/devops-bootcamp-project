@@ -19,7 +19,6 @@ The monorepo holds the whole pipeline — infrastructure, config, the web app, a
 | `package.json` | Root tooling for the docs sync |
 | `.github/workflows/` | CI/CD: `commit-pipeline.yml` (docs sync) and `static.yml` (Pages deploy) |
 | `index.html` | GitHub Pages entry point, regenerated from this README |
-| `opencode.json` | opencode config (terraform MCP) |
 
 ## Quickstart
 
@@ -33,14 +32,12 @@ cd devops-bootcamp-project
 cd terraform
 terraform init
 terraform apply -auto-approve   # creates VPC, security groups, 3 EC2, writes inventory.ini
-cd ..
 
 # 2) Configure the servers with Ansible
 cd ansible
 ansible-playbook playbook-web.yaml        # pulls the web image from ECR, runs it on node3
 ansible-playbook playbook-stack.yaml      # Prometheus + Grafana on node1
 ansible-playbook playbook-exporter.yaml   # node_exporter on all nodes
-cd ..
 ```
 
 Access:
@@ -169,7 +166,7 @@ The project was built up feature-by-feature on topic branches before being merge
 | Branch | Purpose |
 |--------|---------|
 | `terraform` | Initial Terraform configuration (VPC, network, EC2, inventory) |
-| `ec2` / `ec2new` | EC2 instance provisioning and key/AMI tweaks |
+| `ec2` | EC2 instance provisioning and key/AMI tweaks |
 | `ansible` | Ansible configuration and plays |
 | `docker` | Docker Compose + app containerisation (also folded `app/ship` into the repo) |
 | `grafana` | Grafana/Prometheus monitoring setup |
