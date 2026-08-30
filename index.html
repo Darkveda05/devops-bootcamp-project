@@ -209,10 +209,6 @@
 <td><code>index.html</code></td>
 <td>GitHub Pages entry point, regenerated from this README</td>
 </tr>
-<tr>
-<td><code>opencode.json</code></td>
-<td>opencode config (terraform MCP)</td>
-</tr>
 </tbody></table>
     </section>
 
@@ -226,14 +222,12 @@ cd devops-bootcamp-project
 cd terraform
 terraform init
 terraform apply -auto-approve   # creates VPC, security groups, 3 EC2, writes inventory.ini
-cd ..
 
 # 2) Configure the servers with Ansible
 cd ansible
 ansible-playbook playbook-web.yaml        # pulls the web image from ECR, runs it on node3
 ansible-playbook playbook-stack.yaml      # Prometheus + Grafana on node1
 ansible-playbook playbook-exporter.yaml   # node_exporter on all nodes
-cd ..
 </code></pre>
 <p>Access:</p>
 <ul>
@@ -422,7 +416,7 @@ npm run preview    # serve the built site on :8080
 <td>Initial Terraform configuration (VPC, network, EC2, inventory)</td>
 </tr>
 <tr>
-<td><code>ec2</code> / <code>ec2new</code></td>
+<td><code>ec2</code></td>
 <td>EC2 instance provisioning and key/AMI tweaks</td>
 </tr>
 <tr>
