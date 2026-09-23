@@ -251,10 +251,6 @@
 <td><code>index.html</code></td>
 <td>GitHub Pages entry point, regenerated from this README</td>
 </tr>
-<tr>
-<td><code>opencode.json</code></td>
-<td>opencode config (terraform MCP)</td>
-</tr>
 </tbody></table>
     </section>
 
@@ -268,14 +264,12 @@ cd devops-bootcamp-project
 cd terraform
 terraform init
 terraform apply -auto-approve   # creates VPC, security groups, 3 EC2, writes inventory.ini
-cd ..
 
 # 2) Configure the servers with Ansible
 cd ansible
 ansible-playbook playbook-web.yaml        # pulls the web image from ECR, runs it on node3
 ansible-playbook playbook-stack.yaml      # Prometheus + Grafana on node1
 ansible-playbook playbook-exporter.yaml   # node_exporter on all nodes
-cd ..
 </code></pre>
 <p>Access:</p>
 <ul>
@@ -376,6 +370,95 @@ terraform apply -auto-approve
 </tbody></table>
     </section>
 
+<<<<<<< HEAD
+=======
+    <section class="card">
+      <h2>Application — app/ship</h2>
+<p>The <code>ship</code> web app (<code>app/ship/</code>) is a <strong>Vite + Three.js</strong> &quot;launchpad&quot; microsite — a customizable 3D spaceship plus a
+telemetry HUD, and the thing the pipeline builds, checks, and deploys. It has its own self-contained app lifecycle.</p>
+<h3>Customize it</h3>
+<p>Edit <strong><code>app/ship/ship.config.json</code></strong> — the only file you need to touch:</p>
+<pre><code class="language-json">{
+  &quot;shipName&quot;: &quot;Nebula Runner&quot;,
+  &quot;color&quot;: &quot;#22d3ee&quot;,
+  &quot;shipModel&quot;: &quot;fighter&quot;,
+  &quot;emblem&quot;: &quot;comet&quot;
+}
+</code></pre>
+<ul>
+<li><code>shipName</code> — up to 24 characters.</li>
+<li><code>color</code> — a hex colour or a colour name (<code>red</code>, <code>emerald</code>, <code>cyan</code>, <code>violet</code>, <code>rose</code>, <code>white</code>, …) that recolours the ship and accents.</li>
+<li><code>shipModel</code> — one of <code>fighter</code>, <code>interceptor</code>, <code>hauler</code>, <code>scout</code> (Quaternius CC0 models, see <code>CREDITS.md</code>).</li>
+<li><code>emblem</code> — one of <code>comet</code>, <code>bolt</code>, <code>star</code>, <code>ring</code>, <code>delta</code>, <code>phoenix</code>.</li>
+</ul>
+<p>The <strong>callsign</strong> is your GitHub username, set automatically at build time. The telemetry HUD shows the ship class spec and
+this build&#39;s deploy facts (callsign, commit SHA, build time) — the pipeline made visible on your own ship.</p>
+<h3>Containerise &amp; deploy</h3>
+<p><code>app/ship/Dockerfile</code> is a multi-stage build: build with <code>node:20-alpine</code> (<code>npm ci</code> → <code>npm run build</code>), then serve the
+static <code>dist/</code> with <code>nginx:alpine</code> on port 80. <code>app/ship/.github/deploy.yml</code> builds, tests, and deploys the app to its own
+GitHub Pages site. The ECR-based <code>playbook-web.yaml</code> above ships this same image to node3.</p>
+<p>Run it locally:</p>
+<pre><code class="language-bash">cd app/ship
+npm install
+npm run dev        # live preview
+npm test           # pre-flight gate — aborts if ship.config.json is invalid
+npm run build      # static site → dist/
+npm run preview    # serve the built site on :8080
+</code></pre>
+    </section>
+
+    <section class="card">
+      <h2>Prerequisites</h2>
+<ul>
+<li>Terraform 1.15+</li>
+<li>Ansible + galaxy roles:<ul>
+<li><code>geerlingguy.docker</code></li>
+<li><code>prometheus.prometheus.prometheus</code></li>
+<li><code>prometheus.prometheus.node_exporter</code></li>
+</ul>
+</li>
+<li>AWS CLI and AWS credentials (plus <code>aws ecr get-login-password</code> access for the web deploy)</li>
+<li>SSH key <code>~/.ssh/id_ed25519</code></li>
+</ul>
+    </section>
+
+    <section class="card">
+      <h2>Git Branch History</h2>
+<p>The project was built up feature-by-feature on topic branches before being merged into <code>main</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Branch</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>terraform</code></td>
+<td>Initial Terraform configuration (VPC, network, EC2, inventory)</td>
+</tr>
+<tr>
+<td><code>ec2</code></td>
+<td>EC2 instance provisioning and key/AMI tweaks</td>
+</tr>
+<tr>
+<td><code>ansible</code></td>
+<td>Ansible configuration and plays</td>
+</tr>
+<tr>
+<td><code>docker</code></td>
+<td>Docker Compose + app containerisation (also folded <code>app/ship</code> into the repo)</td>
+</tr>
+<tr>
+<td><code>grafana</code></td>
+<td>Grafana/Prometheus monitoring setup</td>
+</tr>
+<tr>
+<td><code>main</code></td>
+<td>Integration branch; hosts the docs-sync CI/CD and GitHub Pages site</td>
+</tr>
+</tbody></table>
+    </section>
+>>>>>>> 7c37a9c8bb73fc7875db8a2f1a878d0693d8af5b
 
     <section class="card">
       <h2>CI/CD (GitHub Actions)</h2>
